@@ -24,14 +24,14 @@ openai.api_key = OPENAI_KEY
 
 def chat_ai(input_str):
     response = openai.Completion.create(
-    model="text-davinci-003",
-    prompt=f"Human: {input_str} \n AI:",
-    temperature=0.9,
-    max_tokens=999,
-    top_p=1,
-    frequency_penalty=0,
-    presence_penalty=0.6,
-    stop=[" Human:", " AI:"]
+        model="text-davinci-003",
+        prompt=f"Human: {input_str} \n AI:",
+        temperature=0.9,
+        max_tokens=999,
+        top_p=1,
+        frequency_penalty=0,
+        presence_penalty=0.6,
+        stop=[" Human:", " AI:"]
     )
 
     print(response)
@@ -41,17 +41,33 @@ def chat_ai(input_str):
     return res.strip()
 
 
-def reply_handler(update ,bot):
+def create_image(input_str):
+    response = openai.Image.create(
+        prompt=input_str,
+        n=1,
+        size="1024x1024"
+    )
+    print(response)
+    res = response['data'][0]['url']
+    return res.strip()
+
+
+def reply_handler(update, bot):
     """Reply message."""
     try:
         text = update.message.text
         if text.startswith("ChatGPT: "):
-          text = text[4:]
-          print(text)
-          res = chat_ai(text)
-          print(res)
-          update.message.reply_text(res)
-
+            text = text[9:]
+            print(text)
+            res = chat_ai(text)
+            print(res)
+            update.message.reply_text(res)
+        elif text.startswith("DALLE: "):
+            text = text[7:]
+            print(text)
+            res = create_image(text)
+            print(res)
+            update.message.reply_text(res)
     except Exception as e:
         print(e)
 
