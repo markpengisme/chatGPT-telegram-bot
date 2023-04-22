@@ -21,24 +21,27 @@ def webhook_handler():
 
 openai.api_key = OPENAI_KEY
 
+messages = []
+
 
 def chat_ai(input_str):
-    response = openai.Completion.create(
-        model="text-davinci-003",
-        prompt=f"Human: {input_str} \n AI:",
+    if len(messages) > 10:
+        messages = messages[-10:]
+    messages.append({"role": "user", "content": input_str})
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=messages,
         temperature=0.9,
-        max_tokens=999,
         top_p=1,
+        max_tokens=512,
         frequency_penalty=0,
         presence_penalty=0.6,
-        stop=[" Human:", " AI:"]
+        stop=None
     )
-
-    print(response)
-    res = response['choices'][0]['text']
-    if res.startswith("？") or res.startswith("?"):
-        res = res[1:]
-    return res.strip()
+    ai_msg = response.choices[0].message.content.replace('\n', '')
+    messages.append({"role": "assistant", "content": ai_msg})
+    print(messages)  # debug
+    return ai_msg
 
 
 def create_image(input_str):
@@ -56,20 +59,24 @@ def reply_handler(update, bot):
     """Reply message."""
     try:
         text = update.message.text
-        if text.startswith("ChatGPT: "):
+        if text == "ChatGPT: clear" or text == "ChatGPT: Clear":
+            messages = []
+            update.message.reply_text("Clear ChatGPT messages complete")
+        elif text.startswith("ChatGPT: "):
             text = text[9:]
-            print(text)
             res = chat_ai(text)
-            print(res)
+            print(f"ME: ${text}")
+            print(f"AI: ${res}")
             update.message.reply_text(res)
         elif text.startswith("DALLE: "):
             text = text[7:]
-            print(text)
             res = create_image(text)
-            print(res)
+            print(f"ME: ${text}")
+            print(f"AI: ${res}")
             update.message.reply_text(res)
     except Exception as e:
         print(e)
+
 
 dispatcher = Dispatcher(bot, None)
 dispatcher.add_handler(MessageHandler(Filters.text, reply_handler))
